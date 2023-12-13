@@ -1,0 +1,26 @@
+@using SetApp.Models
+
+<div class="@(Card.Selected ? "card selected" : "card")" @onclick="@(() => HandleCardClick(Index))">
+        <img src="@("images/" + Card.ImageString + ".png")" class="image" />
+</div>
+
+@code {
+        [Parameter]
+        public required Card Card { get; set; }
+        [Parameter]
+        public required int Index { get; set; }
+        [Parameter]
+        public required bool Clickable { get; set; }
+        [Parameter]
+        public EventCallback<int> OnCardClicked { get; set; }
+        private async Task HandleCardClick(int index)
+        {
+                if (Clickable)
+                {
+                        await OnCardClicked.InvokeAsync(index);
+                }
+
+        }
+
+
+}

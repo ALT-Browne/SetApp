@@ -1,0 +1,152 @@
+@using SetApp.Models
+@page "/setsolofixed"
+
+<PageTitle>Set Solo Fixed</PageTitle>
+
+@if (showRules)
+{
+        <div class="set-rules">
+        <p>A game of Set consists of 81 unique cards that vary in four characteristics across three values for each
+                kind: number of shapes (one, two, or three), shape (diamond, squiggle, oval), shading (solid, striped,
+                or open), and color (red, green, or purple). Each possible combination of characteristics (e.g. a card
+                with three striped green diamonds) appears as a card precisely once in the deck.</p>
+
+        <p>To play, you must find certain combinations of three cards which make a "set". This means that for each of
+                the four characteristics (colour, number, shape, and shading) the three cards must display either a) all
+                the same value, or b) all different values. In other words, for each characteristic the three cards must
+                avoid having two cards with equal value and the third card showing a different value.</p>
+
+        <p>For example, 3 solid red diamonds, 2 solid green squiggles, and 1 solid purple oval form a set, because the
+                shadings of the three cards are all the same, while the numbers, the colors, and the shapes among the
+                three cards are all different.</p>
+
+        <p>Try and find all the sets in the current hand by selecting the cards and clicking "Check Set". There is a
+                hint button if you are stuck. Keep going until you think there are no more, then click the finish
+                button!</p>
+</div>
+}
+<SetBoard Board=@game.CurrentBoard Clickable=@true ResetMessages=@ResetMessages />
+<SetSoloMoveHistory BoardHistory=@game.BoardHistory JumpToMove=@JumpToMove ResetMessages=@ResetMessages
+        UnselectCards=@UnselectCards />
+<div class="buttons-container">
+        <button @onclick="@(() => RestartGame())">Restart</button>
+        <div class="button-message-container">
+                <button @onclick="@(() => HandleHint())">Hint</button>
+                <div class="message">
+                        @(game.HintMessage)
+                </div>
+        </div>
+        <div class="button-message-container">
+                <button @onclick="@(() => HandleCheckSet())">Check Set</button>
+                <div class="message">
+                        @(game.CheckSetMessage)
+                </div>
+        </div>
+        <div class="button-message-container">
+                <button @onclick="@(() => HandleFinishGame())">Finish</button>
+                <div class="message">
+                        @(finishMessage)
+                </div>
+        </div>
+        <div class="button-message-container">
+                <button @onclick="@(() => ToggleShowRules())">Rules</button>
+        </div>
+</div>
+
+<div class="sets-found-container">
+        <label>@(game.CurrentSetsFound.Count == 1 ? game.CurrentSetsFound.Count + " set found:" :
+                     game.CurrentSetsFound.Count + " sets found:")</label>
+        <div class="sets-found">
+                @foreach (var tuple in game.CurrentSetsFound)
+                {
+                        <div class="set-found">
+                                <img src="@("images/" + tuple.Item1.ImageString + ".png")" class="image" />
+                                <img src="@("images/" + tuple.Item2.ImageString + ".png")" class="image" />
+                                <img src="@("images/" + tuple.Item3.ImageString + ".png")" class="image" />
+                        </div>
+                }
+        </div>
+</div>
+
+@code {
+        [Parameter]
+        public required int NumCards { get; set; }
+        private Game game = new Game(true);
+        private bool showRules = false;
+        private string finishMessage = "";
+
+        protected override void OnInitialized()
+        {
+                List<Card> deck = new List<Card>();
+                game.DeckHistory[0].ForEach(card => deck.Add(new Card(card)));
+                List<Card> firstCards = [];
+                for (int i = 0; i < NumCards; i++)
+                {
+                        firstCards.Add(deck[i]);
+                }
+                game.CurrentBoard = new Board(firstCards);
+                game.SetsFoundHistory = new List<List<Tuple<Card, Card, Card>>>() { new List<Tuple<Card, Card, Card>>() };
+        }
+
+        private void RestartGame()
+        {
+                game = new Game(true);
+                showRules = false;
+                List<Card> deck = new List<Card>();
+                game.DeckHistory[0].ForEach(card => deck.Add(new Card(card)));
+                List<Card> firstCards = [];
+                for (int i = 0; i < NumCards; i++)
+                {
+                        firstCards.Add(deck[i]);
+                }
+                game.CurrentBoard = new Board(firstCards);
+                game.SetsFoundHistory = new List<List<Tuple<Card, Card, Card>>>() { new List<Tuple<Card, Card, Card>>() };
+        }
+
+        private void JumpToMove(int moveNum)
+        {
+                game.CurrentMove = moveNum;
+        }
+
+        private void ToggleShowRules()
+        {
+                showRules = !showRules;
+        }
+
+        private void UnselectCards(int num)
+        {
+                game.CurrentBoard.Cards.ForEach(card => card.Selected = false);
+        }
+
+        private void ResetMessages(int num)
+        {
+                game.CheckSetMessage = "";
+                game.HintMessage = "";
+                finishMessage = "";
+        }
+
+        private void HandleHint()
+        {
+                game.GiveHint(true);
+        }
+
+        private void HandleCheckSet()
+        {
+                game.CheckSet(true);
+        }
+
+        private void HandleFinishGame()
+        {
+                game.HintMessage = "";
+                finishMessage = "";
+                game.CheckSetMessage = "";
+                if (game.CurrentBoard.Sets.Count == game.CurrentSetsFound.Count)
+                {
+                        finishMessage = "You found all the sets. Well done!";
+                }
+                else
+                {
+                        finishMessage = "There is at least one set available.";
+                }
+        }
+}

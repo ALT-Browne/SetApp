@@ -1,0 +1,71 @@
+@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>Set</PageTitle>
+<div class="top-content">
+        <h1>Set</h1>
+        <p>Choose your game mode:</p>
+        <div>
+                <button @onclick="@(() => HandleSoloClick())">Solo</button>
+                <button @onclick="@(() => HandleSoloFixedClick())">Solo Fixed</button>
+                <button @onclick="@(() => HandleVsClick())">vs</button>
+        </div>
+</div>
+
+@if (soloGame)
+{
+        <SetSolo />
+}
+else if (soloFixedGame)
+{
+        <div class="select-container">
+        <label>
+                Choose number of cards:
+        </label>
+        <select class="form-control" @bind="@soloFixedCardNumSelected" style="width:150px" DefaultText="12">
+                @for (int i = 12; i <= 81; i += 3)
+                        {
+                                <option value=@i>@i</option>
+                        }
+                </select>
+        </div>
+
+        @if (soloFixedCardNumSelected != 0)
+        {
+                <SetSoloFixed NumCards=@soloFixedCardNumSelected />
+        }
+
+}
+else if (vsGame)
+{
+        <SetVs />
+}
+
+@code {
+        private bool soloGame = false;
+        private bool soloFixedGame = false;
+        private int soloFixedCardNumSelected = 0;
+        private bool vsGame = false;
+
+        private void HandleSoloClick()
+        {
+                soloGame = true;
+                soloFixedGame = false;
+                vsGame = false;
+        }
+
+        private void HandleSoloFixedClick()
+        {
+                soloGame = false;
+                soloFixedGame = true;
+                vsGame = false;
+        }
+
+        private void HandleVsClick()
+        {
+                soloGame = false;
+                soloFixedGame = false;
+                vsGame = true;
+        }
+
+}

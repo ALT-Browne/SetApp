@@ -1,0 +1,10 @@
+.cards-container {
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: center;
+        gap: 20px;
+        max-height: 350px;
+        margin-top: 50px;
+}

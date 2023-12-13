@@ -1,0 +1,29 @@
+@using SetApp.Models
+
+<div class="cards-container">
+        @foreach (var card in Board.Cards.Select((card, index) => (card,
+        index)))
+        {
+                <SetCard Card=@card.card Index=@card.index Clickable=@Clickable OnCardClicked=@HandleCardClick />
+        }
+</div>
+
+@code {
+        [Parameter]
+        public required Board Board { get; set; }
+        [Parameter]
+        public required bool Clickable { get; set; }
+        [Parameter]
+        public EventCallback<int> ResetMessages { get; set; }
+        private int numSelectedCards;
+
+        private async Task HandleCardClick(int cardIndex)
+        {
+                await ResetMessages.InvokeAsync(1);
+                numSelectedCards = Board.Cards.Where(card => card.Selected).Count();
+                if (numSelectedCards < 3 || Board.Cards[cardIndex].Selected)
+                {
+                        Board.Cards[cardIndex].Selected = !Board.Cards[cardIndex].Selected;
+                }
+        }
+}

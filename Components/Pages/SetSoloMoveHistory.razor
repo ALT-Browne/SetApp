@@ -1,0 +1,54 @@
+@using SetApp.Models
+
+<div class="game-info">
+        <label>
+                Jump to move:
+        </label>
+        <div class="move-history">
+                @if (MovesIsAscending)
+                {
+                        @foreach (var board in BoardHistory.Select((board, index) => (board,
+                       index)))
+                        {
+                                <button @onclick="@(() => HandleJumpToMove(board.index))">@((board.index))</button>
+                        }
+                }
+                else
+                {
+                        @foreach (var board in BoardHistory.Select((board, index) => (board,
+                       index)))
+                        {
+                                <button @onclick="@(() => HandleJumpToMove(BoardHistory.Count - 1 - board.index))">@("Move " +
+                        (BoardHistory.Count - 1 - board.index))</button>
+                        }
+                }
+
+        </div>
+        @* <button @onclick="@(() => ChangeMovesOrder())">@(MovesIsAscending ?
+        "Descending" : "Ascending")</button> *@
+</div>
+
+@code {
+        [Parameter]
+        public required List<Board> BoardHistory { get; set; }
+        [Parameter]
+        public EventCallback<int> JumpToMove { get; set; }
+        [Parameter]
+        public EventCallback<int> ResetMessages { get; set; }
+        [Parameter]
+        public EventCallback<int> UnselectCards { get; set; }
+        private bool MovesIsAscending = true;
+
+
+        private void ChangeMovesOrder()
+        {
+                MovesIsAscending = !MovesIsAscending;
+        }
+
+        private async Task HandleJumpToMove(int moveNum)
+        {
+                await UnselectCards.InvokeAsync(1);
+                await ResetMessages.InvokeAsync(1);
+                await JumpToMove.InvokeAsync(moveNum);
+        }
+}

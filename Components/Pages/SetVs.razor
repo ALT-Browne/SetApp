@@ -1,0 +1,223 @@
+@using SetApp.Models
+@page "/setvs"
+
+<PageTitle>Set Vs</PageTitle>
+
+@if (showRules)
+{
+        <div class="set-rules">
+        <p>A game of Set consists of 81 unique cards that vary in four characteristics across three values for each
+                kind: number of shapes (one, two, or three), shape (diamond, squiggle, oval), shading (solid, striped,
+                or open), and color (red, green, or purple). Each possible combination of characteristics (e.g. a card
+                with three striped green diamonds) appears as a card precisely once in the deck.</p>
+
+        <p>To play, players must find certain combinations of three cards which make a "set". This means that for each
+                of
+                the four characteristics (colour, number, shape, and shading) the three cards must display either a) all
+                the same value, or b) all different values. In other words, for each characteristic the three cards must
+                avoid having two cards with equal value and the third card showing a different value.</p>
+
+        <p>For example, 3 solid red diamonds, 2 solid green squiggles, and 1 solid purple oval form a set, because the
+                shadings of the three cards are all the same, while the numbers, the colors, and the shapes among the
+                three cards are all different.</p>
+
+        <p>When a player thinks they have found a set, they shout "Set!", select their player button to unlock the
+                board, select the cards and then click "Check Set". If they are correct, those cards are removed from
+                the game (and replaced if there are 12 or fewer in the current hand
+                and there are cards left in the deck), and they get a point. Sometimes there will be no set possible, at
+                which point players may agree to
+                click "Deal More Cards" to get more. There is also a hint button if both players are stuck and agree to
+                use it. Keep going until the cards run out!</p>
+</div>
+}
+
+<div class="player-scores">
+        <div class="player-score-container">
+                <button class="@(player1Move ? "player-move-highlight" : "")"
+                        @onclick="@(() => HandlePlayer1Select())">Player 1</button>
+                <div class="player1-score">@(scoresHistory[game.CurrentMove][0])</div>
+        </div>
+        <div class="player-score-container">
+                <button class="@(player2Move ? "player-move-highlight" : "")"
+                        @onclick="@(() => HandlePlayer2Select())">Player 2</button>
+                <div class="player2-score">@(scoresHistory[game.CurrentMove][1])</div>
+        </div>
+</div>
+<SetBoard Board=@game.CurrentBoard Clickable="@(player1Move || player2Move)" ResetMessages=@ResetMessages />
+<SetSoloMoveHistory BoardHistory=@game.BoardHistory JumpToMove=@JumpToMove ResetMessages=@ResetMessages
+        UnselectCards=@UnselectCards />
+<div class="buttons-container">
+        <button @onclick="@(() => RestartGame())">Restart</button>
+        <div class="button-message-container">
+                <button @onclick="@(() => HandleHint())">Hint</button>
+                <div class="message">
+                        @(game.HintMessage)
+                </div>
+        </div>
+        <div class="button-message-container">
+                <button @onclick="@(() => HandleCheckSet())">Check Set</button>
+                <div class="message">
+                        @(game.CheckSetMessage)
+                </div>
+        </div>
+        <div class="button-message-container">
+                <button @onclick="@(() => HandleDealMoreCards(3))">Deal More
+                        Cards</button>
+                <div class="message">
+                        @(game.DealMoreCardsMessage)
+                </div>
+        </div>
+        <div class="button-message-container">
+                <button @onclick="@(() => ToggleShowRules())">Rules</button>
+        </div>
+</div>
+
+<div class="sets-found-container">
+        <label>@(game.CurrentSetsFound.Count == 1 ? game.CurrentSetsFound.Count + " set found:" :
+                     game.CurrentSetsFound.Count + " sets found:")</label>
+        <div class="sets-found">
+                @foreach (var tuple in game.CurrentSetsFound)
+                {
+                        <div class="set-found">
+                                <img src="@("images/" + tuple.Item1.ImageString + ".png")" class="image" />
+                                <img src="@("images/" + tuple.Item2.ImageString + ".png")" class="image" />
+                                <img src="@("images/" + tuple.Item3.ImageString + ".png")" class="image" />
+                        </div>
+                }
+        </div>
+</div>
+
+
+
+@code {
+        private Game game = new Game(false);
+        private bool showRules = false;
+        private List<List<int>> scoresHistory = new List<List<int>>() { new List<int>() { 0, 0 } };
+        private bool player1Move = false;
+        private bool player2Move = false;
+
+        private void RestartGame()
+        {
+                game = new Game(false);
+                showRules = false;
+        }
+
+        private void JumpToMove(int moveNum)
+        {
+                game.CurrentMove = moveNum;
+        }
+
+        private void ToggleShowRules()
+        {
+                showRules = !showRules;
+        }
+
+        private void UnselectCards(int num)
+        {
+                game.CurrentBoard.Cards.ForEach(card => card.Selected = false);
+        }
+
+        private void ResetMessages(int num)
+        {
+                game.CheckSetMessage = "";
+                game.HintMessage = "";
+                game.DealMoreCardsMessage = "";
+        }
+        private void HandleHint()
+        {
+                if (!player1Move && !player2Move)
+                {
+                        game.GiveHint(false);
+                }
+        }
+
+        private void HandleCheckSet()
+        {
+                int numSetsFound;
+                int newNumSetsFound;
+                var nextScoresHistory = new List<List<int>>();
+                var nextScore = new List<int>();
+                for (int i = 0; i <= game.CurrentMove; i++)
+                {
+                        nextScoresHistory.Add(new List<int>() { scoresHistory[i][0], scoresHistory[i][1] });
+                }
+
+                if (player1Move)
+                {
+                        numSetsFound = game.CurrentSetsFound.Count;
+                        game.CheckSet(false);
+                        newNumSetsFound = game.CurrentSetsFound.Count;
+                        if (newNumSetsFound != numSetsFound)
+                        {
+                                nextScore.Add(nextScoresHistory.Last()[0] + 1);
+                                nextScore.Add(nextScoresHistory.Last()[1]);
+                                nextScoresHistory.Add(nextScore);
+
+                                scoresHistory.Clear();
+                                nextScoresHistory.ForEach(scores => scoresHistory.Add(new List<int>() { scores[0], scores[1] }));
+                        }
+                }
+                else if (player2Move)
+                {
+                        numSetsFound = game.CurrentSetsFound.Count;
+                        game.CheckSet(false);
+                        newNumSetsFound = game.CurrentSetsFound.Count;
+                        if (newNumSetsFound != numSetsFound)
+                        {
+                                nextScore.Add(nextScoresHistory.Last()[0]);
+                                nextScore.Add(nextScoresHistory.Last()[1] + 1);
+                                nextScoresHistory.Add(nextScore);
+
+                                scoresHistory.Clear();
+                                nextScoresHistory.ForEach(scores => scoresHistory.Add(new List<int>() { scores[0], scores[1] }));
+                        }
+                }
+
+                player1Move = false;
+                player2Move = false;
+        }
+
+        private void HandleDealMoreCards(int numCards)
+        {
+                if (!player1Move && !player2Move)
+                {
+                        game.HintMessage = "";
+                        game.DealMoreCardsMessage = "";
+                        game.CheckSetMessage = "";
+
+                        var nextScoresHistory = new List<List<int>>();
+                        var nextScore = new List<int>();
+                        for (int i = 0; i <= game.CurrentMove; i++)
+                        {
+                                nextScoresHistory.Add(new List<int>() { scoresHistory[i][0], scoresHistory[i][1] });
+                        }
+
+                        if (game.CurrentBoard.Sets.Count == 0)
+                        {
+                                game.AddCards(numCards);
+
+                                nextScore.Add(nextScoresHistory.Last()[0]);
+                                nextScore.Add(nextScoresHistory.Last()[1]);
+                                nextScoresHistory.Add(nextScore);
+
+                                scoresHistory.Clear();
+                                nextScoresHistory.ForEach(scores => scoresHistory.Add(new List<int>() { scores[0], scores[1] }));
+                        }
+                        else
+                        {
+                                game.DealMoreCardsMessage = "There is at least one set available.";
+                        }
+                }
+        }
+        private void HandlePlayer1Select()
+        {
+                player1Move = !player1Move;
+                player2Move = false;
+        }
+
+        private void HandlePlayer2Select()
+        {
+                player2Move = !player2Move;
+                player1Move = false;
+        }
+}
